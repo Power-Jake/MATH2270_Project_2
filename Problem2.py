@@ -1,8 +1,8 @@
 import sys
 
 poly_in = [1, 2, 4, 5]  # Indices in the array = degree of term - 1
-# constraint arrays in the form [preceeding elements] <= [last element]
-constraints = [[1, 1, 1, 1, 14], [1, 0, 0, 1, 7], [0, 0, 1, 1, 5], [0, 0, 0, 1, 2]]
+# constraint arrays in the form [preceeding elements] >= [last element]
+constraints = [[0, 1, 0, 0, 2], [1, 0, 0, 1, 9], [0, 0, 1, 1, 5], [0, 0, 0, 1, 2]]
 constraints_greater_than = [[1, 1, 1, 0]]
 
 
@@ -27,7 +27,6 @@ class ProblemTwo:
                  [vals_by_subscr[0][2], vals_by_subscr[1][2], vals_by_subscr[2][2], vals_by_subscr[3][2], vals_by_subscr[4][2]],  # row 3
                  [vals_by_subscr[0][3], vals_by_subscr[1][3], vals_by_subscr[2][3], vals_by_subscr[3][3], vals_by_subscr[4][3]],  # row 4
                  [poly_in[0], poly_in[1], poly_in[2], poly_in[3], 1]]  # row 5
-
         table_transpose = gen_transpose(table)
 
         row1 = [table_transpose[0][0], table_transpose[0][1], table_transpose[0][2], table_transpose[0][3], 1, 0, 0, 0, 0, table_transpose[0][4]]
@@ -35,46 +34,39 @@ class ProblemTwo:
         row3 = [table_transpose[2][0], table_transpose[2][1], table_transpose[2][2], table_transpose[2][3], 0, 0, 1, 0, 0, table_transpose[2][4]]
         row4 = [table_transpose[3][0], table_transpose[3][1], table_transpose[3][2], table_transpose[3][3], 0, 0, 0, 1, 0, table_transpose[3][4]]
         row5 = [-1 * table_transpose[4][0], -1 * table_transpose[4][1], -1 * table_transpose[4][2], -1 * table_transpose[4][3], 0, 0, 0, 0, 1 * table_transpose[4][4], 0]
+
         simplex_table = [row1, row2, row3, row4, row5]
-        """
-        # I am just gonna hard code the table because I am not sure how to do it otherwise
-        #                 x1          s1                          A1           z' W costs
-        simplex_table = [[1, 0, 0, 1, -1,  0,  0,  0,  0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 7],
-                         [0, 0, 0, 1,  0, -1,  0,  0,  0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2],
-                         [1, 1, 1, 1,  0,  0, -1,  0,  0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 14],
-                         [0, 0, 1, 1,  0,  0,  0, -1,  0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 5],
-                         [1, 0, 0, 0,  0,  0,  0,  0,  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7],
-                         [0, 1, 0, 0,  0,  0,  0,  0,  0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 6],
-                         [0, 0, 1, 0,  0,  0,  0,  0,  0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 4],
-                         [0, 0, 0, 1,  0,  0,  0,  0,  0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 5],
-                         [1, 2, 4, 5,  0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                         [-2,-1,-2,-4, 1,  1,  1,  1,  0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -28]]
-        """
+
         row_length = len(simplex_table[0])
         # Check if we need to optimize
-        while negativest_in_row(simplex_table) != -1:  # need to pivot if true
+        # If != -1 then the number represents the column with the lowest negative value in the bottom "cost" row.
+        # When == -1 happens then I know the table is optimized and the program prints the results and ends.
+        while negativest_in_row(simplex_table) != -1:
             pivot_col = negativest_in_row(simplex_table)
 
+            # This segment of the code finds the row with the pivot
             low_temp = sys.maxsize
             pivot_row = 0
             i = 0
-            while i < len(simplex_table) - 1:  # The -1 is to take zero indexing into account
-                if simplex_table[i][pivot_col] == 0:
+            # i is an integer that keeps count of rows as I read through them one by one.
+            while i < (len(simplex_table) - 1):  # The -1 is to take zero indexing into account
+                if simplex_table[i][pivot_col] == 0:  # Avoid division by 0
                     i += 1
                     continue
                 temp_ratio = simplex_table[i][row_length - 1] / simplex_table[i][pivot_col]
-                if low_temp > temp_ratio > 0:
-                    pivot_row = i
+                if low_temp > temp_ratio >= 0:
+                    pivot_row = i  # If I find a new smallest ratio then I save it into pivot row.
                     low_temp = temp_ratio
                 i += 1
 
-            #  Pivot the table around pivot_row x low_col
-            c = simplex_table[pivot_row][pivot_col]
-            j = 0
+            # This loop reduces the pivot and its row so that the pivot's value is 1
+            c = simplex_table[pivot_row][pivot_col]  # c = is the value of the pivot's coefficient
+            j = 0  # j is an integer that keeps count of columns as I read through them.
             while j < len(simplex_table[pivot_row]):
                 simplex_table[pivot_row][j] = simplex_table[pivot_row][j] / c
                 j += 1
 
+            # This loop does row operations to get the values above and below the pivot to zero
             i = 0  # row
             while i < len(simplex_table):
                 if i == pivot_row:
@@ -87,9 +79,9 @@ class ProblemTwo:
                     j += 1
                 i += 1
 
-        # Find the values of x TODO this gets the wrong values.  Debug mode and look at the table for current results.
+        # Find the values of X
         # Write out the end values
-        print("minimum of $", simplex_table[len(simplex_table)-1][row_length-1], " for")
+        print("Minimum of $", simplex_table[len(simplex_table)-1][row_length-1], " for")
         print(simplex_table[len(simplex_table)-1][4], "pints of A")
         print(simplex_table[len(simplex_table)-1][5], "pints of AB")
         print(simplex_table[len(simplex_table)-1][6], "pints of B")
