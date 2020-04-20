@@ -11,7 +11,7 @@ class ProblemOne:
 
     def main(self):
         # ------------------ Problem 1 ------------------
-        # get the variable numbers
+        # get the variable numbers in a table for my ease of use
         vals_by_subscr = []
         counter = 0
         for v in " "*(len(poly_in)+1):
@@ -20,17 +20,18 @@ class ProblemOne:
                 temp.append(row[counter])
             vals_by_subscr.append(temp)
             counter += 1
-        # Make the initial table
+        # Make a table to represent the problem
         table = [[vals_by_subscr[0][0], vals_by_subscr[1][0], vals_by_subscr[2][0], vals_by_subscr[3][0]],
                  [vals_by_subscr[0][1], vals_by_subscr[1][1], vals_by_subscr[2][1], vals_by_subscr[3][1]],
                  [vals_by_subscr[0][2], vals_by_subscr[1][2], vals_by_subscr[2][2], vals_by_subscr[3][2]],
                  [vals_by_subscr[0][3], vals_by_subscr[1][3], vals_by_subscr[2][3], vals_by_subscr[3][3]],
                  [poly_in[0], poly_in[1], poly_in[2], 1]]
-        # Transpose the table
-        table_transpose = gen_transpose(table)
-        # Maximize
 
-        # nb vars (3), slack vars (3), z, col to max (1)
+        # I am minimizing so I find the transpose the table
+        table_transpose = gen_transpose(table)
+
+        # Maximize the transpose to find the minimum
+        # vars (3), slack vars (3), z, col to max (1)
         row1 = [table_transpose[0][0], table_transpose[0][1], table_transpose[0][2], table_transpose[0][3], 1, 0, 0, 0, table_transpose[0][4]]
         row2 = [table_transpose[1][0], table_transpose[1][1], table_transpose[1][2], table_transpose[1][3], 0, 1, 0, 0, table_transpose[1][4]]
         row3 = [table_transpose[2][0], table_transpose[2][1], table_transpose[2][2], table_transpose[2][3], 0, 0, 1, 0, table_transpose[2][4]]
@@ -38,27 +39,35 @@ class ProblemOne:
 
         simplex_table = [row1, row2, row3, row4]
         row_length = len(row1)
-        # Check if we need to pivot
-        while negativest_in_row(simplex_table) != -1:  # need to pivot if true
+        # Check if we need to optimize
+        # If != -1 then the number represents the column with the lowest negative value in the bottom "cost" row.
+        # When == -1 happens then I know the table is optimized and the program prints the results and ends.
+        while negativest_in_row(simplex_table) != -1:
             pivot_col = negativest_in_row(simplex_table)
 
+            # This segment of the code finds the row with the pivot
             low_temp = sys.maxsize
             pivot_row = 0
             i = 0
-            while i < len(simplex_table)-1:  # The +2 is 1 for Z column and one to account for 0 indexing
+            # i is an integer that keeps count of rows as I read through them one by one.
+            while i < (len(simplex_table)-1):  # The -1 is to take zero indexing into account
+                if simplex_table[i][pivot_col] == 0:  # Avoid division by 0
+                    i += 1
+                    continue
                 temp_ratio = simplex_table[i][row_length-1]/simplex_table[i][pivot_col]
-                if low_temp > temp_ratio > 0:
-                    pivot_row = i
+                if low_temp > temp_ratio >= 0:
+                    pivot_row = i   # If I find a new smallest ratio then I save it into pivot row.
                     low_temp = temp_ratio
                 i += 1
 
-            #  Pivot the table around pivot_row x low_col
-            c = simplex_table[pivot_row][pivot_col]
-            j = 0
+            # This loop reduces the pivot and its row so that the pivot's value is 1
+            c = simplex_table[pivot_row][pivot_col]  # c = is the value of the pivot's coefficient
+            j = 0  # j is an integer that keeps count of columns as I read through them.
             while j < len(simplex_table[pivot_row]):
                 simplex_table[pivot_row][j] = simplex_table[pivot_row][j]/c
                 j += 1
 
+            # This loop does row operations to get the values above and below the pivot to zero
             i = 0  # row
             while i < len(simplex_table):
                 if i == pivot_row:
@@ -73,7 +82,7 @@ class ProblemOne:
 
         # Find the values of x
         # Write out the end values
-        print("minimum of ", simplex_table[len(simplex_table)-1][row_length-1], " at")
+        print("Minimum of ", simplex_table[len(simplex_table)-1][row_length-1], " at")
         print(" x1", " = ", simplex_table[len(simplex_table)-1][4])
         print(" x2", " = ", simplex_table[len(simplex_table)-1][5])
         print(" x3", " = ", simplex_table[len(simplex_table)-1][6])
