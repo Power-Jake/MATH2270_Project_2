@@ -44,27 +44,34 @@ class ProblemThree:
         simplex_table = [row1, row2, row3]
         row_length = len(row1)
         # Check if we need to optimize
-        while negativest_in_row(simplex_table) != -1:  # need to pivot if true
+        # If != -1 then the number represents the column with the lowest negative value in the bottom "cost" row.
+        # When == -1 happens then I know the table is optimized and the program prints the results and ends.
+        while negativest_in_row(simplex_table) != -1:
             pivot_col = negativest_in_row(simplex_table)
 
+            # This segment of the code finds the row with the pivot
             low_temp = sys.maxsize
             pivot_row = 0
             i = 0
-            while i < len(simplex_table)-1:  # The -1 is for 0 indexing
-                temp_ratio = simplex_table[i][row_length-1]/simplex_table[i][pivot_col]
-                #  temp_ratio = abs(temp_ratio-1)  # Value closest to 1
-                if low_temp > temp_ratio > 0:
-                    pivot_row = i
+            # i is an integer that keeps count of rows as I read through them one by one.
+            while i < (len(simplex_table) - 1):  # The -1 is to take zero indexing into account
+                if simplex_table[i][pivot_col] == 0:  # Avoid division by 0
+                    i += 1
+                    continue
+                temp_ratio = simplex_table[i][row_length - 1] / simplex_table[i][pivot_col]
+                if low_temp > temp_ratio >= 0:
+                    pivot_row = i  # If I find a new smallest ratio then I save it into pivot row.
                     low_temp = temp_ratio
                 i += 1
 
-            #  Pivot the table around pivot_row x low_col
-            c = simplex_table[pivot_row][pivot_col]
-            j = 0
+            # This loop reduces the pivot and its row so that the pivot's value is 1
+            c = simplex_table[pivot_row][pivot_col]  # c = is the value of the pivot's coefficient
+            j = 0  # j is an integer that keeps count of columns as I read through them.
             while j < len(simplex_table[pivot_row]):
-                simplex_table[pivot_row][j] = simplex_table[pivot_row][j]/c
+                simplex_table[pivot_row][j] = simplex_table[pivot_row][j] / c
                 j += 1
 
+            # This loop does row operations to get the values above and below the pivot to zero
             i = 0  # row
             while i < len(simplex_table):
                 if i == pivot_row:
@@ -73,7 +80,7 @@ class ProblemThree:
                 j = 0  # col
                 scalar = simplex_table[i][pivot_col]
                 while j < row_length:
-                    simplex_table[i][j] = simplex_table[i][j] - (scalar*simplex_table[pivot_row][j])
+                    simplex_table[i][j] = simplex_table[i][j] - (scalar * simplex_table[pivot_row][j])
                     j += 1
                 i += 1
 
